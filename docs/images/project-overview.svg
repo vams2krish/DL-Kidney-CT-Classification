@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+<title id="title">DL Kidney CT Classification</title>
+<desc id="desc">Project illustration showing kidney anatomy and a workflow from CT images through VGG16 to Normal or Tumor labels. This is not a medical scan.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#081b31"/><stop offset="1" stop-color="#123d50"/></linearGradient><linearGradient id="organ" x2="1" y2="1"><stop stop-color="#38ddcb"/><stop offset="1" stop-color="#1685ac"/></linearGradient></defs>
+<rect width="1280" height="640" rx="24" fill="url(#bg)"/>
+<circle cx="1060" cy="180" r="260" fill="#2bc6bd" opacity=".05"/>
+<text x="70" y="90" font-family="Segoe UI,Arial,sans-serif" font-size="19" font-weight="700" fill="#58dfcf" letter-spacing="4">DEEP LEARNING / COMPUTER VISION</text>
+<text x="70" y="170" font-family="Segoe UI,Arial,sans-serif" font-size="55" font-weight="700" fill="#f1f7fc">Kidney CT</text>
+<text x="70" y="236" font-family="Segoe UI,Arial,sans-serif" font-size="55" font-weight="700" fill="#f1f7fc">Classification</text>
+<text x="73" y="286" font-family="Segoe UI,Arial,sans-serif" font-size="23" fill="#adcad7">VGG16 transfer learning · TensorFlow · Flask</text>
+<g transform="translate(865 95)"><rect x="-60" y="0" width="365" height="300" rx="25" fill="#0b2336" stroke="#326070"/>
+<path d="M83 56 C-18 5 -57 179 25 242 C74 282 139 211 101 165 C74 137 128 88 83 56Z" fill="url(#organ)"/>
+<path d="M163 56 C264 5 303 179 221 242 C172 282 107 211 145 165 C172 137 118 88 163 56Z" fill="url(#organ)"/>
+<path d="M99 147 Q124 165 121 252 M146 147 Q123 165 126 252" stroke="#98f4df" stroke-width="7" fill="none"/>
+<text x="122" y="282" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="13" fill="#adcad7">PROJECT ILLUSTRATION · NOT A CT SCAN</text></g>
+<g font-family="Segoe UI,Arial,sans-serif" font-size="22" text-anchor="middle">
+<rect x="70" y="425" width="240" height="90" rx="14" fill="#173a51" stroke="#336078"/><text x="190" y="478" fill="#f1f7fc">CT image</text>
+<path d="M328 470H378m-12-10 12 10-12 10" stroke="#58dfcf" stroke-width="3" fill="none"/>
+<rect x="400" y="425" width="370" height="90" rx="14" fill="#164a59" stroke="#58dfcf"/><text x="585" y="465" fill="#f1f7fc">Frozen VGG16 + Softmax</text><text x="585" y="493" font-size="16" fill="#adcad7">224 × 224 × 3 input</text>
+<path d="M789 470H839m-12-10 12 10-12 10" stroke="#58dfcf" stroke-width="3" fill="none"/>
+<rect x="860" y="425" width="345" height="90" rx="14" fill="#173a51" stroke="#336078"/><text x="1032" y="478" fill="#f1f7fc">Normal / Tumor</text></g>
+<text x="70" y="582" font-family="Segoe UI,Arial,sans-serif" font-size="18" fill="#adcad7">DVC pipeline · Configurable training · Evaluation artifacts · Educational research</text>
+</svg>

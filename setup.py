@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 __version__ = "0.0.0"
 
-REPO_NAME = "MLflow"
+REPO_NAME = "DL-Kidney-CT-Classification"
 AUTHOR_USER_NAME = "vams2krish"
 SRC_REPO = "cnnClassifier"
 AUTHOR_EMAIL = "adam.vamshikrishna@gmail.com"
@@ -17,7 +17,7 @@ setuptools.setup(
     version=__version__,
     author=AUTHOR_USER_NAME,
     author_email=AUTHOR_EMAIL,
-    description="A small python package for CNN app",
+    description="VGG16 deep learning pipeline for kidney CT image classification",
     long_description=long_description,
     long_description_content="text/markdown",
     url=f"https://github.com/{AUTHOR_USER_NAME}/{REPO_NAME}",
