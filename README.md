@@ -1,4 +1,4 @@
-# DL · Kidney CT Classification
+# DL Â· Kidney CT Classification
 
 ![Kidney CT classification project overview](docs/images/project-overview.svg)
 
@@ -14,23 +14,23 @@ The repository name follows **project type + project name**: `DL-Kidney-CT-Class
 
 The following are screenshots from the actual local application. The sample is a generated software fixture, clearly marked **synthetic**, and contains no patient data. Its class label has no medical interpretation.
 
-### 1 · Desktop workspace
+### 1 Â· Desktop workspace
 
 ![Desktop upload workspace and research limitations](docs/showcase/01-desktop.jpg)
 
-### 2 · Image preview
+### 2 Â· Image preview
 
 ![Synthetic image preview before classification](docs/showcase/02-image-preview.jpg)
 
-### 3 · Live model output
+### 3 Â· Live model output
 
 ![Actual VGG16 output with raw model scores](docs/showcase/03-live-result.jpg)
 
-### 4 · Mobile layout
+### 4 Â· Mobile layout
 
 ![Responsive mobile layout with a completed prediction](docs/showcase/04-mobile.jpg)
 
-### 5 · Validation and recovery
+### 5 Â· Validation and recovery
 
 ![Invalid image validation displayed by the live app](docs/showcase/05-validation.jpg)
 
@@ -74,7 +74,7 @@ The default server binds to loopback. `HOST` and `PORT` can configure the listen
 - A responsive upload, preview, loading, result, error, and reset workflow without external fonts or scripts.
 - JPEG / PNG validation, a **5 MB decoded image** limit, **8 MB request** limit, and **16 megapixel** limit.
 - In-memory image handling; the app does not save uploaded files or log their image payloads.
-- EXIF orientation correction, RGB conversion, bilinear resizing to 224 × 224, and `1/255` normalization.
+- EXIF orientation correction, RGB conversion, bilinear resizing to 224 Ã— 224, and `1/255` normalization.
 - Real softmax scores from the bundled model, explicitly labeled **uncalibrated**. No fabricated confidence percentages.
 - Serialized model loading and execution across concurrent requests, without shared upload filenames.
 - Health and model-readiness endpoints, structured API errors, same-origin requests, and security response headers.
@@ -101,7 +101,7 @@ flowchart LR
 | --- | --- |
 | Project type | Deep learning, supervised binary image classification |
 | Backbone | ImageNet VGG16 with the original classifier removed and backbone frozen |
-| Head | Flatten → Dense(2, softmax) |
+| Head | Flatten â†’ Dense(2, softmax) |
 | Training | SGD, categorical cross-entropy, augmentation, 30% directory validation split |
 | Serving runtime | Python 3.11, TensorFlow 2.15.0, Flask 3.1.2, Waitress 3.0.2 |
 | Training runtime | Original `requirements.txt` pins TensorFlow 2.12.0 and MLflow 2.2.2; use a separate environment |
@@ -174,8 +174,8 @@ The expected extracted folders are:
 
 ```text
 artifacts/data_ingestion/kidney-ct-scan-image/
-├── Normal/
-└── Tumor/
+â”œâ”€â”€ Normal/
+â””â”€â”€ Tumor/
 ```
 
 Use a separate environment for the original training dependencies:
@@ -238,7 +238,7 @@ docker run --rm -p 127.0.0.1:8080:8080 kidney-ct-demo
 
 The local Docker engine was unavailable during this update; container execution is not claimed as verified. The app was exercised locally with Waitress.
 
-The `Demo checks` GitHub Actions workflow runs the Python tests on pushes and pull requests. The inherited AWS workflow is **manual-only** and still requires ECR secrets and a self-hosted runner. Review it before running it; its original placeholder lint/test steps are not a substitute for the demo checks.
+The `Demo checks` GitHub Actions workflow runs the Python tests and starts Waitress for a real HTTP smoke test on pushes and pull requests. The inherited AWS workflow is **manual-only** and still requires ECR secrets and a self-hosted runner. Review it before running it; its original placeholder lint/test steps are not a substitute for the demo checks.
 
 ## License and attribution
 

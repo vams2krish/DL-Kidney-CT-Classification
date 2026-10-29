@@ -1,4 +1,4 @@
-# Verification record — 2026-10-29
+# Verification record â€” 2026-10-29
 
 ## Story verified
 
@@ -19,17 +19,17 @@ A user opens the local product, loads a synthetic image or selects a file, submi
 | --- | --- | --- |
 | UI renders | Passed | Desktop screenshot; all assets served locally; no external font/script dependencies |
 | Image selection | Passed | Built-in sample and native file chooser both display a preview |
-| Browser → API → model | Passed | Browser Run classification returned Normal, raw scores Normal 0.8590835333 / Tumor 0.1409164369 |
-| Response → UI | Passed | Actual scores displayed as 85.91% / 14.09%; repeated browser run completed in 0.21 s |
-| Invalid input → error | Passed | Corrupt PNG returned a readable API error shown in the browser |
+| Browser â†’ API â†’ model | Passed | Browser Run classification returned Normal, raw scores Normal 0.8590835333 / Tumor 0.1409164369 |
+| Response â†’ UI | Passed | Actual scores displayed as 85.91% / 14.09%; repeated browser run completed in 0.21 s |
+| Invalid input â†’ error | Passed | Corrupt PNG returned a readable API error shown in the browser |
 | Error recovery | Passed | Remove, upload a valid file, and run inference successfully |
-| Responsive view | Passed | 390 × 844 viewport; document scroll width 375, no horizontal overflow; completed result visible in full-page screenshot |
+| Responsive view | Passed | 390 Ã— 844 viewport; document scroll width 375, no horizontal overflow; completed result visible in full-page screenshot |
 | Health / readiness | Passed | Actual HTTP 200 responses from both endpoints |
 | Web training blocked | Passed | Actual HTTP 403 from `/train` |
 | Concurrent requests | Passed | Three real HTTP predictions completed with identical fixture scores |
 | Automated suite | Passed | `python -m pytest -q`: **20 passed, 1 warning in 11.72 s** |
 
-[Saved HTTP evidence](live-test-results.json) includes the actual responses, timings, UTC check timestamp, and model hash. HTTP fixture inference took **0.144 s** after model loading; three simultaneous requests completed in **0.151–0.414 s**. These timings describe this local run only and are not load-test or service-level guarantees. The first browser inference took **42.20 s**, including TensorFlow/model initialization during environment setup.
+[Saved HTTP evidence](live-test-results.json) includes the actual responses, timings, UTC check timestamp, and model hash. HTTP fixture inference took **0.144 s** after model loading; three simultaneous requests completed in **0.151â€“0.414 s**. These timings describe this local run only and are not load-test or service-level guarantees. The first browser inference took **42.20 s**, including TensorFlow/model initialization during environment setup.
 
 The automated suite covers missing/malformed JSON, wrong content type, invalid base64, unsupported/corrupt images, request/image/pixel limits, normalization, RGB/grayscale/RGBA conversion, JPEG/PNG, security headers, unavailable models, training rejection, real-model responses, repeated inference, and concurrent requests with different input images. Validation-only cases use a controlled fake engine; the actual-model test uses the bundled HDF5 artifact.
 

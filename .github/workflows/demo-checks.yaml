@@ -17,3 +17,14 @@ jobs:
           cache: pip
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest -q
+      - name: Live HTTP smoke test
+        shell: bash
+        run: |
+          python serve.py > /tmp/kidney-demo.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"; cat /tmp/kidney-demo.log' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8080/health; then break; fi
+            sleep 1
+          done
+          python tools/live_smoke_test.py

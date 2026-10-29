@@ -31,17 +31,22 @@ def call(path, body=None, expected=200):
     return {'route': path, 'status': status, 'seconds': round(time.perf_counter()-started, 3), 'response': data}
 
 
-results = [call('/health'), call('/ready'), call('/predict', payload),
-           call('/predict', {'image': 'invalid!!!'}, 400),
-           call('/predict', {'image': base64.b64encode(b'corrupt').decode()}, 400),
-           call('/train', expected=403)]
-with ThreadPoolExecutor(max_workers=3) as executor:
-    concurrent = list(executor.map(lambda _: call('/predict', payload), range(3)))
-assert all(item['response'][0]['scores'] == results[2]['response'][0]['scores'] for item in concurrent)
-report = {'checked_at_utc': datetime.now(timezone.utc).isoformat(),
-          'base_url': BASE, 'input': 'synthetic-demo.png; no patient data',
-          'model_sha256': hashlib.sha256((ROOT / 'model/model.h5').read_bytes()).hexdigest(),
-          'checks': results, 'concurrent_predictions': concurrent,
-          'scope': 'Software execution only; not medical accuracy or load validation.'}
-(ROOT / 'docs/live-test-results.json').write_text(json.dumps(report, indent=2)+'\n')
-print(json.dumps(report, indent=2))
+def main():
+    results = [call('/health'), call('/ready'), call('/predict', payload),
+               call('/predict', {'image': 'invalid!!!'}, 400),
+               call('/predict', {'image': base64.b64encode(b'corrupt').decode()}, 400),
+               call('/train', expected=403)]
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        concurrent = list(executor.map(lambda _: call('/predict', payload), range(3)))
+    assert all(item['response'][0]['scores'] == results[2]['response'][0]['scores'] for item in concurrent)
+    report = {'checked_at_utc': datetime.now(timezone.utc).isoformat(),
+              'base_url': BASE, 'input': 'synthetic-demo.png; no patient data',
+              'model_sha256': hashlib.sha256((ROOT / 'model/model.h5').read_bytes()).hexdigest(),
+              'checks': results, 'concurrent_predictions': concurrent,
+              'scope': 'Software execution only; not medical accuracy or load validation.'}
+    (ROOT / 'docs/live-test-results.json').write_text(json.dumps(report, indent=2)+'\n')
+    print(json.dumps(report, indent=2))
+
+
+if __name__ == '__main__':
+    main()
