@@ -1,0 +1,122 @@
+{
+  "checked_at_utc": "2026-10-29T16:47:23.389698+00:00",
+  "base_url": "http://127.0.0.1:8080",
+  "input": "synthetic-demo.png; no patient data",
+  "model_sha256": "cd69c3fe47bc0eea916d99ac2a73c5baaf3f8021c95ead8318ec77b628498a6c",
+  "checks": [
+    {
+      "route": "/health",
+      "status": 200,
+      "seconds": 0.007,
+      "response": {
+        "model_loaded": true,
+        "purpose": "research-demo",
+        "status": "ok"
+      }
+    },
+    {
+      "route": "/ready",
+      "status": 200,
+      "seconds": 0.014,
+      "response": {
+        "model": "VGG16",
+        "status": "ready"
+      }
+    },
+    {
+      "route": "/predict",
+      "status": 200,
+      "seconds": 0.152,
+      "response": [
+        {
+          "image": "Normal",
+          "model": "VGG16",
+          "notice": "Research demo only. Scores are uncalibrated and are not diagnostic confidence.",
+          "score": 0.8590835332870483,
+          "scores": {
+            "Normal": 0.8590835332870483,
+            "Tumor": 0.14091643691062927
+          }
+        }
+      ]
+    },
+    {
+      "route": "/predict",
+      "status": 400,
+      "seconds": 0.002,
+      "response": {
+        "error": "Image must contain valid base64 data."
+      }
+    },
+    {
+      "route": "/predict",
+      "status": 400,
+      "seconds": 0.019,
+      "response": {
+        "error": "The file is not a readable JPEG or PNG image."
+      }
+    },
+    {
+      "route": "/train",
+      "status": 403,
+      "seconds": 0.001,
+      "response": {
+        "error": "Web training is disabled. Run python main.py or dvc repro locally."
+      }
+    }
+  ],
+  "concurrent_predictions": [
+    {
+      "route": "/predict",
+      "status": 200,
+      "seconds": 0.151,
+      "response": [
+        {
+          "image": "Normal",
+          "model": "VGG16",
+          "notice": "Research demo only. Scores are uncalibrated and are not diagnostic confidence.",
+          "score": 0.8590835332870483,
+          "scores": {
+            "Normal": 0.8590835332870483,
+            "Tumor": 0.14091643691062927
+          }
+        }
+      ]
+    },
+    {
+      "route": "/predict",
+      "status": 200,
+      "seconds": 0.288,
+      "response": [
+        {
+          "image": "Normal",
+          "model": "VGG16",
+          "notice": "Research demo only. Scores are uncalibrated and are not diagnostic confidence.",
+          "score": 0.8590835332870483,
+          "scores": {
+            "Normal": 0.8590835332870483,
+            "Tumor": 0.14091643691062927
+          }
+        }
+      ]
+    },
+    {
+      "route": "/predict",
+      "status": 200,
+      "seconds": 0.431,
+      "response": [
+        {
+          "image": "Normal",
+          "model": "VGG16",
+          "notice": "Research demo only. Scores are uncalibrated and are not diagnostic confidence.",
+          "score": 0.8590835332870483,
+          "scores": {
+            "Normal": 0.8590835332870483,
+            "Tumor": 0.14091643691062927
+          }
+        }
+      ]
+    }
+  ],
+  "scope": "Software execution only; not medical accuracy or load validation."
+}

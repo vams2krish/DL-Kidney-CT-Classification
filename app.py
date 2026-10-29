@@ -1,67 +1,100 @@
-from flask import Flask, request, jsonify, render_template
+"""Local research demo API. Serve with Waitress via serve.py."""
+import base64
+import binascii
 import os
+import sys
 from pathlib import Path
-from flask_cors import CORS, cross_origin
-from cnnClassifer.utils.Common import decodeImage
-from cnnClassifer.pipeline.prediction import PredictionPipeline
+
+from flask import Flask, jsonify, render_template, request
+from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, UnsupportedMediaType
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / 'src'))
+from cnnClassifer.pipeline.prediction import InvalidImage, PredictionPipeline
 
 
+def create_app(classifier=None):
+    app = Flask(__name__)
+    app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024
+    engine = classifier if classifier is not None else PredictionPipeline()
+    app.extensions['classifier'] = engine
 
-os.putenv('LANG', 'en_US.UTF-8')
-os.putenv('LC_ALL', 'en_US.UTF-8')
+    @app.after_request
+    def headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['Referrer-Policy'] = 'no-referrer'
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; img-src 'self' data: blob:; "
+            "script-src 'self'; style-src 'self'; connect-src 'self'; "
+            "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        )
+        return response
 
-app = Flask(__name__)
-CORS(app)
+    @app.get('/')
+    def home():
+        return render_template('index.html')
 
+    @app.get('/health')
+    def health():
+        return jsonify(status='ok', model_loaded=engine.model is not None,
+                       purpose='research-demo')
 
-class ClientApp:
-    def __init__(self):
-        self.filename = "inputImage.jpg"
+    @app.get('/ready')
+    def ready():
         try:
-            self.classifier = PredictionPipeline(self.filename)
-        except Exception as e:
-            print(f"Warning: Could not initialize prediction pipeline: {str(e)}")
-            self.classifier = None
+            with engine.lock:
+                engine.load_model()
+            return jsonify(status='ready', model='VGG16')
+        except Exception:
+            app.logger.exception('Model readiness failed')
+            return jsonify(error='Model unavailable'), 503
+
+    @app.route('/train', methods=['GET', 'POST'])
+    def train_disabled():
+        return jsonify(error='Web training is disabled. Run python main.py or dvc repro locally.'), 403
+
+    @app.post('/predict')
+    def predict():
+        payload = request.get_json()
+        if not isinstance(payload, dict) or not isinstance(payload.get('image'), str) or not payload['image']:
+            return jsonify(error='Provide a non-empty base64 image string.'), 400
+        encoded = payload['image']
+        if encoded.startswith('data:'):
+            if ',' not in encoded or ';base64,' not in encoded:
+                return jsonify(error='Invalid image data URL.'), 400
+            encoded = encoded.split(',', 1)[1]
+        try:
+            data = base64.b64decode(encoded, validate=True)
+        except (binascii.Error, ValueError):
+            return jsonify(error='Image must contain valid base64 data.'), 400
+        if len(data) > 5 * 1024 * 1024:
+            return jsonify(error='Image exceeds the 5 MB limit.'), 413
+        try:
+            return jsonify(engine.predict_bytes(data))
+        except InvalidImage as exc:
+            return jsonify(error=str(exc)), 400
+        except Exception:
+            app.logger.exception('Prediction failed')
+            return jsonify(error='Model unavailable. Check server logs and readiness.'), 503
+
+    @app.errorhandler(RequestEntityTooLarge)
+    def too_large(exc):
+        return jsonify(error='Request exceeds the 8 MB limit.'), 413
+
+    @app.errorhandler(BadRequest)
+    def bad_request(exc):
+        return jsonify(error='Request body must contain valid JSON.'), 400
+
+    @app.errorhandler(UnsupportedMediaType)
+    def wrong_type(exc):
+        return jsonify(error='Use Content-Type: application/json.'), 415
+
+    return app
 
 
-# Initialize ClientApp before defining routes
-clApp = ClientApp()
+app = create_app()
 
-
-@app.route("/", methods=['GET'])
-@cross_origin()
-def home():
-    return render_template('index.html')
-
-
-
-@app.route("/train", methods=['GET','POST'])
-@cross_origin()
-def trainRoute():
-    #os.system("python main.py") #use either one
-    os.system("dvc repro")    #use either one
-    return "Training done successfully!"
-
-
-
-@app.route("/predict", methods=['POST'])
-@cross_origin()
-def predictRoute():
-    try:
-        if clApp.classifier is None:
-            return jsonify({"error": "Prediction pipeline not initialized"}), 500
-            
-        image = request.json.get('image')
-        if not image:
-            return jsonify({"error": "No image provided"}), 400
-            
-        decodeImage(image, clApp.filename)
-        result = clApp.classifier.predict()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8080) #for AWS
-
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=int(os.environ.get('PORT', '8080')), debug=False)

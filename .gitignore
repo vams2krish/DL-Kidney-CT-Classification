@@ -160,3 +160,6 @@ cython_debug/
 #.idea/
 
 artifacts/*
+# Local demo outputs
+.demo-logs/
+inputImage.jpg

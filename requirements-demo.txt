@@ -1,0 +1,6 @@
+# Standalone serving environment; training dependencies remain in requirements.txt.
+tensorflow==2.15.0
+numpy==1.26.4
+Flask==3.1.2
+waitress==3.0.2
+Pillow==11.3.0
