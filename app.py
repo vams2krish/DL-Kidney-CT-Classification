@@ -16,7 +16,9 @@ from cnnClassifer.pipeline.prediction import InvalidImage, PredictionPipeline
 def create_app(classifier=None):
     app = Flask(__name__)
     app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024
-    engine = classifier if classifier is not None else PredictionPipeline()
+    engine = classifier if classifier is not None else PredictionPipeline(
+        model_path=os.environ.get('KIDNEY_MODEL_PATH'),
+    )
     app.extensions['classifier'] = engine
 
     @app.after_request
@@ -72,7 +74,10 @@ def create_app(classifier=None):
         if len(data) > 5 * 1024 * 1024:
             return jsonify(error='Image exceeds the 5 MB limit.'), 413
         try:
-            return jsonify(engine.predict_bytes(data))
+            result = engine.predict_bytes(data)
+            if payload.get('explain') is True:
+                result[0].update(engine.explain_bytes(data, int(result[0]['image'] == 'Tumor')))
+            return jsonify(result)
         except InvalidImage as exc:
             return jsonify(error=str(exc)), 400
         except Exception:

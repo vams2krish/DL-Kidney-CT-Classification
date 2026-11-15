@@ -163,3 +163,6 @@ artifacts/*
 # Local demo outputs
 .demo-logs/
 inputImage.jpg
+
+# Local medical image datasets
+/datasets/

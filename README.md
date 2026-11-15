@@ -12,6 +12,96 @@ The repository name follows **project type + project name**: `DL-Kidney-CT-Class
 
 ## Project showcases
 
+### Retrained model on a published kidney CT
+
+The updated workspace uses a **Research use only** notice, clearer upload and recovery controls, and a larger attention overlay. It previews a real CT JPEG and displays the predicted class, raw scores, and a short description of the input. For Tumor predictions with positive class evidence, the orange overlay highlights model attention. Verified tumor location and boundaries require expert annotations.
+
+![Published kidney CT loaded in the retrained demo](docs/showcase/06-retrained-ct-preview.jpg)
+
+![Retrained model output with image description and Tumor-class attention overlay](docs/showcase/07-retrained-ct-result.jpg)
+
+The model displayed **Tumor**, a **62.07% uncalibrated score**, and **grayscale JPEG, 301 × 306 pixels** for this example. The second screenshot adds the model attention shading to the published image. [NIH Clinical Center CT image via Wikimedia Commons](https://commons.wikimedia.org/wiki/File:CT_VHL_renal.jpg).
+
+### Retraining results
+
+On the same 93-image holdout, the bundled VGG16 model matched **67 of 93 labels (72.0%)** and the retrained head matched **93 of 93 (100%)** through the local API. The new head uses VGG16's ImageNet preprocessing and regularized logistic regression on frozen features. Exact duplicate images stayed in the same split. Patient IDs were unavailable, so these image-level results leave performance on unseen patients unmeasured. The historical 48.2% came from a separate evaluation.
+
+With the project dataset extracted, install scikit-learn in the serving environment and run `python tools/retrain_vgg16.py` to produce `artifacts/retrained-vgg16.keras`. Set `KIDNEY_MODEL_PATH=artifacts/retrained-vgg16.keras` in the server environment before running `python serve.py` to use the retrained model.
+
+On a stricter five-fold evaluation over all 465 images, each test fold held out contiguous numeric filenames within each class. Training excluded immediately adjacent filenames and exact copies of test images after resizing. Fresh VGG16 classifier heads matched **366 of 465 labels (78.7%)**. A head pooling features across three VGG16 layers matched **353 of 465 (75.9%)**. The bundled model matched **342 of 465 (73.5%)** on the same images, with unknown training overlap. The existing retraining approach performed best in this comparison. The filename split is a proxy for related slices and leaves patient-level accuracy unmeasured.
+
+Follow-up experiments on those same folds reached **84.3%** with crop and flip augmentation, **86.2%** with an image-gradient SVM, and **87.3% (406/465)** by averaging the two models' scaled decision scores. The ensemble still missed 47 of 225 Tumor-labeled images. These scores guide model development on the reused folds. An independent patient-level test is needed to estimate generalization.
+
+### Expanded-data CNN
+
+A compact CNN trained from scratch on 900 screened images from the original CT Kidney archive, then fine-tuned separately within each of the five project folds, matched **461 of 465 labels (99.1%)**. The five fold counts were 93, 90, 93, 93, and 92 correct out of 93 each. It matched 236 of 240 Normal labels and 225 of 225 Tumor labels.
+
+The additional training sample contained 450 images per class. Screening excluded filenames within 80 numbers of a project image of the same class, exact resized-pixel matches, images close to a project visual hash, and images exceeding a color-marking threshold. These checks reduce obvious overlap. Related slices may still cross the split, and the source archive may share patients with the project dataset. The 99.1% is an exploratory image-level result on reused folds. Patient-level performance remains unmeasured. [CT Kidney archive via BiomedCoOp](https://huggingface.co/datasets/TahaKoleilat/BiomedCoOp/tree/main).
+
+Place the extracted datasets in the project’s `datasets/` directory. Keep each source separate so the training script can screen for overlap.
+
+| Folder | Purpose |
+| --- | --- |
+| `datasets/Project-Kidney-CT` | Original Normal and Tumor images for the five-fold benchmark |
+| `datasets/CTKidney` | Original CT Kidney archive extracted for screened pretraining |
+| `datasets/RenSeg-KidneyCT` | Annotated collection kept separate because it overlaps with the project dataset |
+
+Train directly from the extracted folders and export a checkpoint after cross-validation:
+
+```powershell
+python tools/retrain_expanded_cnn.py --export artifacts/expanded-ct-cnn-folder.keras
+```
+
+To use the archive directly instead, pass `--archive`:
+
+```powershell
+python tools/retrain_expanded_cnn.py --archive .demo-logs/ctkidney-original.zip --export artifacts/expanded-ct-cnn.keras
+```
+
+The script requires the serving dependencies plus scikit-learn. The export is trained with all project images after cross-validation. It accepts 64 × 64 grayscale tensors prepared by the script and emits a binary logit. It is a separate research artifact from the VGG16 checkpoint used by the web app.
+
+### Four-class kidney CT classifier
+
+The four-class CNN distinguishes **Normal, Tumor, Stone, and Cyst**. It uses the four extracted class folders from the CTKidney archive. The script splits each class into contiguous filename blocks, removes boundary slices and exact duplicates after resizing, and selects a checkpoint using validation loss. The held-out test blocks are scored after checkpoint selection.
+
+The saved checkpoint achieved **69.9% accuracy (1,649/2,360)** and **63.2% macro F1**. Always predicting the largest class would score 41.4% accuracy. The most common error was classifying Normal images as Tumor (184), followed by classifying Stone images as Cyst (156).
+
+| Class | Correct / test images | Recall |
+| --- | ---: | ---: |
+| Normal | 722 / 978 | 73.8% |
+| Tumor | 391 / 450 | 86.9% |
+| Stone | 87 / 265 | 32.8% |
+| Cyst | 449 / 667 | 67.3% |
+
+This evaluation covers four classes on a different split from the binary experiment. Patient-level accuracy remains unknown because verified patient identifiers were unavailable. The aggregate evaluation includes precision, recall, F1, class counts, and the full confusion matrix. [Four-class evaluation JSON](docs/four-class-evaluation.json).
+
+```powershell
+python -m pip install -r requirements-demo.txt scikit-learn
+python tools/train_four_class_cnn.py
+```
+
+Pass `--archive .demo-logs/ctkidney-original.zip` to train directly from the same dataset archive.
+
+The script saves `artifacts/four-class-ct-cnn.keras` and `artifacts/four-class-evaluation.json`. The checkpoint takes a batch of 64 × 64 grayscale images with a singleton channel dimension, padded with black to preserve aspect ratio. Supply pixel values in the range 0–255. The model outputs four scores in the order **Normal, Tumor, Stone, Cyst**.
+
+```python
+import numpy as np
+from PIL import Image, ImageOps
+from tensorflow.keras.models import load_model
+
+labels = ("Normal", "Tumor", "Stone", "Cyst")
+model = load_model("artifacts/four-class-ct-cnn.keras", compile=False)
+with Image.open("sample.jpg") as image:
+    gray = ImageOps.exif_transpose(image).convert("L")
+    prepared = ImageOps.pad(gray, (64, 64), Image.Resampling.BILINEAR, color=0)
+scores = model(np.asarray(prepared)[None, ..., None], training=False).numpy()[0]
+print(labels[scores.argmax()], dict(zip(labels, scores.tolist())))
+```
+
+The Flask demo serves the binary VGG16 model and accepts only compatible two-class checkpoints through `KIDNEY_MODEL_PATH`. Use the four-class checkpoint through Keras. [CT Kidney dataset source](https://www.kaggle.com/datasets/nazmul0087/ct-kidney-dataset-normal-cyst-tumor-and-stone).
+
+### Original demo walkthrough
+
 The following are screenshots from the actual local application. The sample is a generated software fixture, clearly marked **synthetic**, and contains no patient data. Its class label has no medical interpretation.
 
 ### 1 Â· Desktop workspace
@@ -65,7 +155,7 @@ pip install -r requirements-demo.txt
 python serve.py
 ```
 
-Open **http://127.0.0.1:8080**, choose **Load synthetic demo image**, and click **Run classification**. No dataset download, tracking account, cloud API key, or retraining is needed for this walkthrough. The first prediction loads the bundled model; subsequent predictions reuse it.
+Open **http://127.0.0.1:8080**, choose **Try a synthetic sample**, and click **Run classification**. No dataset download, tracking account, cloud API key, or retraining is needed for this walkthrough. The first prediction loads the bundled model; subsequent predictions reuse it.
 
 The default server binds to loopback. `HOST` and `PORT` can configure the listening address for a controlled deployment. A public deployment additionally needs TLS, authentication or access controls, rate limiting, monitoring, and an appropriate data policy. This repository does not provision a public inference service.
 

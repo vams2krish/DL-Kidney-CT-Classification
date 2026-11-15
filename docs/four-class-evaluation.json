@@ -1,0 +1,98 @@
+{
+  "classes": [
+    "Normal",
+    "Tumor",
+    "Stone",
+    "Cyst"
+  ],
+  "method": "15 contiguous filename blocks per class, boundary slices and exact resized duplicates removed. Patient identifiers unavailable. Checkpoint selected on validation loss.",
+  "split_counts": {
+    "test": {
+      "Normal": 978,
+      "Tumor": 450,
+      "Stone": 265,
+      "Cyst": 667
+    },
+    "validation": {
+      "Normal": 1009,
+      "Tumor": 451,
+      "Stone": 268,
+      "Cyst": 693
+    },
+    "train": {
+      "Normal": 2987,
+      "Tumor": 1352,
+      "Stone": 799,
+      "Cyst": 1896
+    }
+  },
+  "best_epoch": 3,
+  "test_accuracy": 0.698728813559322,
+  "test_majority_baseline": 0.41440677966101697,
+  "confusion_matrix": [
+    [
+      722,
+      184,
+      72,
+      0
+    ],
+    [
+      7,
+      391,
+      5,
+      47
+    ],
+    [
+      15,
+      7,
+      87,
+      156
+    ],
+    [
+      6,
+      104,
+      108,
+      449
+    ]
+  ],
+  "classification_report": {
+    "Normal": {
+      "precision": 0.9626666666666667,
+      "recall": 0.7382413087934561,
+      "f1-score": 0.8356481481481481,
+      "support": 978.0
+    },
+    "Tumor": {
+      "precision": 0.5699708454810496,
+      "recall": 0.8688888888888889,
+      "f1-score": 0.6883802816901409,
+      "support": 450.0
+    },
+    "Stone": {
+      "precision": 0.31985294117647056,
+      "recall": 0.3283018867924528,
+      "f1-score": 0.3240223463687151,
+      "support": 265.0
+    },
+    "Cyst": {
+      "precision": 0.6886503067484663,
+      "recall": 0.6731634182908546,
+      "f1-score": 0.6808188021228203,
+      "support": 667.0
+    },
+    "accuracy": 0.698728813559322,
+    "macro avg": {
+      "precision": 0.6352851900181633,
+      "recall": 0.6521488756914131,
+      "f1-score": 0.6322173945824561,
+      "support": 2360.0
+    },
+    "weighted avg": {
+      "precision": 0.7381634171523153,
+      "recall": 0.698728813559322,
+      "f1-score": 0.7063589315479165,
+      "support": 2360.0
+    }
+  },
+  "model_sha256": "15625c8f07074dda8802aed996a5f7426e36e8364cefc2fbb5847891b6abc2a0"
+}
