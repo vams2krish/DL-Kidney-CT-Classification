@@ -50,3 +50,37 @@
   .hero h1 { font-size: clamp(2.25rem, 9vw, 3.4rem); }
   .upload-panel, .result-panel { padding: 20px; }
 }
+
+.model-picker {
+  border: 0;
+  padding: 0;
+  margin: 0 0 20px;
+  min-width: 0;
+}
+.model-picker legend { font-size: .9rem; font-weight: 700; margin-bottom: 10px; }
+.model-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.model-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  min-height: 68px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.model-option:has(input:checked) { border-color: var(--green); background: #e9f4ec; }
+.model-option:has(input:disabled) { opacity: .65; cursor: default; }
+.model-option:focus-within { outline: 3px solid #dc9132; outline-offset: 2px; }
+.model-option input { accent-color: var(--green); margin: 3px 0 0; }
+.model-option strong { display: block; font-size: .9rem; }
+.model-option small, .model-hint { display: block; font-size: .78rem; color: var(--muted); margin-top: 5px; }
+.model-hint a { text-decoration: underline; }
+.file-actions { display: flex; flex-shrink: 0; gap: 12px; }
+#resultTitle:focus { outline: none; }
+#scoreList .score-row { grid-template-columns: 65px 1fr 64px; }
+@media (max-width: 550px) {
+  .model-options { grid-template-columns: 1fr; gap: 8px; }
+  .model-option { min-height: auto; }
+}

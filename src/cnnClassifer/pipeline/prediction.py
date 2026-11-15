@@ -17,6 +17,9 @@ class InvalidImage(ValueError):
 
 
 class PredictionPipeline:
+    name = 'VGG16'
+    labels = ('Normal', 'Tumor')
+
     def __init__(self, filename=None, model_path=None):
         self.filename = filename
         self.model_path = Path(model_path or ROOT / 'model' / 'model.h5')
@@ -52,15 +55,14 @@ class PredictionPipeline:
         with self.lock:
             model = self.load_model()
             scores = np.asarray(model(batch, training=False))[0]
-        if scores.shape != (2,) or not np.isfinite(scores).all():
+        if scores.shape != (len(self.labels),) or not np.isfinite(scores).all():
             raise RuntimeError('Invalid classifier output')
         index = int(np.argmax(scores))
-        labels = ['Normal', 'Tumor']
         return [{
-            'image': labels[index],
+            'image': self.labels[index],
             'score': float(scores[index]),
-            'scores': {label: float(value) for label, value in zip(labels, scores)},
-            'model': 'VGG16',
+            'scores': {label: float(value) for label, value in zip(self.labels, scores)},
+            'model': self.name,
             'notice': 'Research demo only. Scores are uncalibrated and are not diagnostic confidence.',
         }]
 
@@ -106,3 +108,25 @@ class PredictionPipeline:
             Image.alpha_composite(rgb.convert('RGBA'), color).save(buffer, format='PNG')
             explanation['attention_image'] = base64.b64encode(buffer.getvalue()).decode('ascii')
         return explanation
+
+
+class FourClassPipeline(PredictionPipeline):
+    name = 'Four-class CNN'
+    labels = ('Normal', 'Tumor', 'Stone', 'Cyst')
+
+    @staticmethod
+    def preprocess(data):
+        try:
+            with Image.open(BytesIO(data)) as source:
+                if source.format not in {'JPEG', 'PNG'}:
+                    raise InvalidImage('Choose a JPEG or PNG image.')
+                if source.width * source.height > 16_000_000:
+                    raise InvalidImage('Image exceeds the 16 megapixel limit.')
+                gray = ImageOps.exif_transpose(source).convert('L')
+                prepared = ImageOps.pad(gray, (64, 64), Image.Resampling.BILINEAR, color=0)
+                return np.asarray(prepared)[None, ..., None]
+        except (OSError, Image.DecompressionBombError) as exc:
+            raise InvalidImage('The file is not a readable JPEG or PNG image.') from exc
+
+    def explain_bytes(self, data, class_index):
+        return super().explain_bytes(data, 0)

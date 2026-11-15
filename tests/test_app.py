@@ -13,7 +13,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from app import create_app
-from cnnClassifer.pipeline.prediction import PredictionPipeline
+from cnnClassifer.pipeline.prediction import FourClassPipeline, PredictionPipeline
 
 
 def image_bytes(color=255, mode='RGB', fmt='PNG'):
@@ -53,6 +53,34 @@ def test_health_and_readiness(client):
 def test_no_web_training(client):
     assert client.get('/train').status_code == 403
     assert client.post('/train').status_code == 403
+
+
+def test_four_class_route_preserves_default_binary_response():
+    class FourEngine(FakeEngine):
+        def predict_bytes(self, data):
+            batch = FourClassPipeline.preprocess(data)
+            assert batch.shape == (1, 64, 64, 1)
+            assert batch.dtype == np.uint8
+            return [{'image': 'Stone', 'scores': {
+                'Normal': .1, 'Tumor': .1, 'Stone': .7, 'Cyst': .1,
+            }}]
+
+    client = create_app(FakeEngine(), four_classifier=FourEngine()).test_client()
+    body = payload(image_bytes())
+    assert client.post('/predict', json=body).json[0]['image'] == 'Normal'
+    response = client.post('/predict', json={**body, 'mode': 'four_class'})
+    assert response.status_code == 200
+    assert response.json[0]['image'] == 'Stone'
+    assert set(response.json[0]['scores']) == {'Normal', 'Tumor', 'Stone', 'Cyst'}
+    assert client.post('/predict', json={**body, 'mode': 'unknown'}).status_code == 400
+
+
+def test_missing_four_class_checkpoint_reports_unavailable(monkeypatch, tmp_path):
+    monkeypatch.setenv('KIDNEY_FOUR_CLASS_MODEL_PATH', str(tmp_path / 'missing.keras'))
+    client = create_app(FakeEngine()).test_client()
+    response = client.post('/predict', json={**payload(image_bytes()), 'mode': 'four_class'})
+    assert response.status_code == 503
+    assert b'four-class model checkpoint is unavailable' in response.data
 
 
 @pytest.mark.parametrize('body', [None, [], {}, {'image': 42}, {'image': ''}, {'image': '!!!'}, {'image': 'data:image/png,no'}])

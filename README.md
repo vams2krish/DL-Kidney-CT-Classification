@@ -98,7 +98,11 @@ scores = model(np.asarray(prepared)[None, ..., None], training=False).numpy()[0]
 print(labels[scores.argmax()], dict(zip(labels, scores.tolist())))
 ```
 
-The Flask demo serves the binary VGG16 model and accepts only compatible two-class checkpoints through `KIDNEY_MODEL_PATH`. Use the four-class checkpoint through Keras. [CT Kidney dataset source](https://www.kaggle.com/datasets/nazmul0087/ct-kidney-dataset-normal-cyst-tumor-and-stone).
+The web workspace offers **Binary classifier** and **Four-class classifier** modes. It detects `artifacts/four-class-ct-cnn.keras` on startup, or uses the path set in `KIDNEY_FOUR_CLASS_MODEL_PATH`. The four-class option is disabled when the checkpoint is missing. `KIDNEY_MODEL_PATH` selects the binary VGG16 checkpoint. The attention overlay is available in binary mode when the model returns positive Tumor-class attention evidence. [CT Kidney dataset source](https://www.kaggle.com/datasets/nazmul0087/ct-kidney-dataset-normal-cyst-tumor-and-stone).
+
+![Model picker and four-class scores in the updated research workspace](docs/showcase/08-four-class-workspace.jpg)
+
+API clients can request four outputs with `"mode": "four_class"` in the prediction body. Requests without a mode retain the binary response.
 
 ### Original demo walkthrough
 

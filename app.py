@@ -10,16 +10,20 @@ from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, UnsupportedMe
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'src'))
-from cnnClassifer.pipeline.prediction import InvalidImage, PredictionPipeline
+from cnnClassifer.pipeline.prediction import FourClassPipeline, InvalidImage, PredictionPipeline
 
 
-def create_app(classifier=None):
+def create_app(classifier=None, four_classifier=None):
     app = Flask(__name__)
     app.config['MAX_CONTENT_LENGTH'] = 8 * 1024 * 1024
     engine = classifier if classifier is not None else PredictionPipeline(
         model_path=os.environ.get('KIDNEY_MODEL_PATH'),
     )
     app.extensions['classifier'] = engine
+    four_path = Path(os.environ.get('KIDNEY_FOUR_CLASS_MODEL_PATH') or
+                     ROOT / 'artifacts' / 'four-class-ct-cnn.keras')
+    if four_classifier is None and four_path.is_file():
+        four_classifier = FourClassPipeline(model_path=four_path)
 
     @app.after_request
     def headers(response):
@@ -36,7 +40,7 @@ def create_app(classifier=None):
 
     @app.get('/')
     def home():
-        return render_template('index.html')
+        return render_template('index.html', four_available=four_classifier is not None)
 
     @app.get('/health')
     def health():
@@ -62,6 +66,12 @@ def create_app(classifier=None):
         payload = request.get_json()
         if not isinstance(payload, dict) or not isinstance(payload.get('image'), str) or not payload['image']:
             return jsonify(error='Provide a non-empty base64 image string.'), 400
+        mode = payload.get('mode', 'binary')
+        if mode not in ('binary', 'four_class'):
+            return jsonify(error='Select a supported model.'), 400
+        selected_engine = four_classifier if mode == 'four_class' else engine
+        if selected_engine is None:
+            return jsonify(error='The four-class model checkpoint is unavailable.'), 503
         encoded = payload['image']
         if encoded.startswith('data:'):
             if ',' not in encoded or ';base64,' not in encoded:
@@ -74,9 +84,9 @@ def create_app(classifier=None):
         if len(data) > 5 * 1024 * 1024:
             return jsonify(error='Image exceeds the 5 MB limit.'), 413
         try:
-            result = engine.predict_bytes(data)
+            result = selected_engine.predict_bytes(data)
             if payload.get('explain') is True:
-                result[0].update(engine.explain_bytes(data, int(result[0]['image'] == 'Tumor')))
+                result[0].update(selected_engine.explain_bytes(data, int(result[0]['image'] == 'Tumor')))
             return jsonify(result)
         except InvalidImage as exc:
             return jsonify(error=str(exc)), 400
