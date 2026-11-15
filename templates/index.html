@@ -1,44 +1,95 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KidneyScan · CT classification lab</title>
-<link rel="stylesheet" href="/static/app.css"><script src="/static/app.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KidneyScan · CT Research Workspace</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
-<header class="nav"><a class="brand" href="/" aria-label="KidneyScan home"><span class="brand-icon">K</span>KidneyScan<span class="lab">/ LAB</span></a><div class="nav-right"><a href="#workflow">How it works</a><a href="https://github.com/vams2krish/DL-Kidney-CT-Classification">Source code ↗</a><span class="research-badge">RESEARCH DEMO</span></div></header>
-<main>
-<section class="hero"><div><div class="eyebrow">KIDNEY CT RESEARCH</div><h1>Kidney CT classification</h1><p>Select a research model and upload a kidney CT slice to inspect its prediction.</p></div><div class="model-panel"><span class="status-dot"></span><span id="serviceStatus" role="status">Checking service…</span><div class="model-name" id="activeModel">VGG16</div><div class="specs" id="modelSpecs">Binary classification · 224 × 224 RGB</div></div></section>
-<div class="notice"><span aria-hidden="true">ⓘ</span><div><strong>Research use only</strong><p>Use this tool to explore how the model classifies kidney CT images. Use known CT images because the app accepts any valid JPEG or PNG. Raw scores and attention overlays are experimental outputs. Do not use them for medical decisions.</p></div></div>
-<fieldset class="model-picker" id="modelPicker">
-  <legend>Choose a model</legend>
-  <div class="model-options">
-    <label class="model-option">
-      <input type="radio" name="modelMode" value="binary" checked>
-      <span><strong>Binary classifier</strong><small>Normal, Tumor · attention overlay when available</small></span>
-    </label>
-    <label class="model-option">
-      <input type="radio" name="modelMode" value="four_class" {% if not four_available %}disabled aria-describedby="fourUnavailable"{% endif %}>
-      <span><strong>Four-class classifier</strong><small>Normal, Tumor, Stone, Cyst</small></span>
-    </label>
-  </div>
-  {% if not four_available %}
-  <p id="fourUnavailable" class="model-hint">Train or add a four-class checkpoint to enable this option. <a href="https://github.com/vams2krish/DL-Kidney-CT-Classification#four-class-kidney-ct-classifier">Setup instructions</a></p>
-  {% endif %}
-</fieldset>
-<section class="workspace" aria-label="Image classification workspace">
-<div class="upload-panel"><div class="panel-heading"><h2>Upload image</h2><span class="subtle">JPEG / PNG · up to 5 MB</span></div>
-<label class="upload-zone" id="uploadArea" for="fileInput"><input type="file" id="fileInput" accept="image/jpeg,image/png"><span class="upload-symbol">↑</span><strong>Choose an image</strong><span>or drag and drop it here</span><span class="file-hint">RGB or grayscale · maximum 16 megapixels</span></label>
-<div class="preview" id="previewContainer" hidden><div class="image-stage"><img id="previewImage" alt="Selected image preview"><span class="image-tag" id="imageTag">YOUR IMAGE</span></div><div class="file-meta"><span id="fileName"></span><div class="file-actions"><button id="replaceBtn" class="text-button" type="button">Replace</button><button id="removeBtn" class="text-button" type="button">Remove</button></div></div></div>
-<div class="sample-row"><span>Need an example?</span><button id="sampleBtn" class="text-button" type="button">Try a synthetic sample</button></div>
-<button class="analyze" id="predictBtn" disabled type="button"><span id="predictLabel">Run classification</span><span aria-hidden="true">→</span></button><p class="privacy">Images are processed in memory. No upload files are saved by this app.</p>
-</div>
-<div class="result-panel" id="resultsPanel" aria-busy="false"><div class="panel-heading"><h2>Results</h2></div>
-<div class="empty-state" id="resultPlaceholder"><div class="empty-orbit">◎</div><h3>Results will appear here</h3><p>Choose an image and run classification to see the model’s output.</p></div>
-<div class="loading" id="loading" hidden role="status"><div class="spinner"></div><h3>Running classification…</h3><p>The first run may take longer while the model loads.</p></div>
-<div id="resultCard" class="result" hidden aria-live="polite"><div class="output-caption">PREDICTED CLASS</div><h3 id="resultTitle" tabindex="-1"></h3><p id="resultDescription">Image-level classification</p><div class="score-heading"><strong>Raw model scores</strong><span>Uncalibrated</span></div><div id="scoreList"></div><p id="scanDescription"></p><figure id="attentionPanel" hidden><img id="attentionImage" alt="Image with orange shading over regions that influenced the Tumor score"><figcaption>Model attention for the Tumor class. Shading shows regions that influenced the score. Tumor location and boundaries require separate validation.</figcaption></figure><div class="result-note" id="resultNote"></div><div class="run-meta"><span id="latency"></span><span id="resultModel"></span></div></div>
-<div class="error" id="errorBox" role="alert" hidden><strong>Unable to classify this image</strong><p id="errorMessage"></p><button class="text-button" id="dismissError" type="button">Choose another image</button></div>
-</div></section>
-<section class="workflow" id="workflow"><div class="section-heading"><div class="eyebrow">UNDER THE HOOD</div><h2>How classification works</h2></div><div class="workflow-grid"><article><span>01 / PREPARE</span><h3>Resize & normalize</h3><p>The app resizes and prepares each image for the selected model.</p></article><article><span>02 / INFER</span><h3>Model inference</h3><p>The selected classifier returns one score for each of its supported classes.</p></article><article><span>03 / INSPECT</span><h3>Understand the limits</h3><p>Compare raw scores. Neither the label nor its score establishes a diagnosis.</p></article></div></section>
-<footer><span>KidneyScan / An open research project</span><span>TensorFlow · Flask · DVC · MLflow</span><a href="/health">Service health ↗</a></footer>
-</main></body></html>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/"><span class="brand-icon" aria-hidden="true">+</span>KidneyScan</a>
+      <a class="source-link" href="https://github.com/vams2krish/DL-Kidney-CT-Classification">Project on GitHub ↗</a>
+    </div>
+  </header>
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">IMAGING RESEARCH</p>
+      <h1 id="page-title">Kidney CT workspace</h1>
+      <p class="intro">Upload a CT slice to explore its predicted class and the image regions that contributed to the model’s score.</p>
+      <div class="status-line">
+        <span id="serviceStatus" role="status">Checking service…</span>
+        <span>{{ 'Four-class CNN · Normal, Tumor, Stone, Cyst' if four_available else 'VGG16 · Normal, Tumor' }}</span>
+      </div>
+    </section>
+    <aside class="notice">
+      <strong>Research use only</strong>
+      <p>Use known kidney CT images. Model scores are uncalibrated, and attention highlights show model activity. Keep these outputs out of medical decisions.</p>
+    </aside>
+    <section class="workspace" aria-label="Image classification workspace">
+      <div class="panel upload-panel">
+        <div class="panel-heading"><h2>Image</h2><span>JPEG or PNG · up to 5 MB</span></div>
+        <label class="upload-zone" id="uploadArea" for="fileInput">
+          <input type="file" id="fileInput" accept="image/jpeg,image/png">
+          <span class="upload-symbol" aria-hidden="true">↑</span>
+          <strong>Choose an image</strong>
+          <span>or drop it here</span>
+          <small>Up to 16 megapixels</small>
+        </label>
+        <div id="previewContainer" hidden>
+          <div class="image-stage"><img id="previewImage" alt="Selected image preview"><span class="image-tag" id="imageTag" hidden>Synthetic sample</span></div>
+          <div class="file-meta">
+            <span id="fileName"></span>
+            <div class="file-actions"><button id="replaceBtn" class="text-button" type="button">Replace</button><button id="removeBtn" class="text-button" type="button">Remove</button></div>
+          </div>
+        </div>
+        <button id="predictBtn" class="analyze" disabled type="button"><span id="predictLabel">Run analysis</span><span aria-hidden="true">→</span></button>
+        <div class="upload-footer">
+          <button id="sampleBtn" class="text-button" type="button">Try a synthetic sample</button>
+          <span>Uploads stay in memory.</span>
+        </div>
+      </div>
+      <div class="panel result-panel" id="resultsPanel" aria-busy="false">
+        <div class="panel-heading"><h2>Analysis</h2></div>
+        <div class="empty-state" id="resultPlaceholder">
+          <span class="empty-orbit" aria-hidden="true">◎</span>
+          <h3>Ready when you are</h3>
+          <p>Choose an image, then select Run analysis.</p>
+        </div>
+        <div class="empty-state" id="loading" hidden role="status">
+          <div class="spinner"></div>
+          <h3>Analyzing image…</h3>
+          <p>The first run may take longer while the model loads.</p>
+        </div>
+        <div id="resultCard" class="result" hidden aria-live="polite">
+          <div class="result-heading">
+            <div><p class="eyebrow">PREDICTED CLASS</p><h3 id="resultTitle" tabindex="-1"></h3></div>
+            <span id="resultModel"></span>
+          </div>
+          <p id="resultDescription" class="result-description"></p>
+          <div class="score-heading"><strong>Class scores</strong><span>Uncalibrated</span></div>
+          <div id="scoreList"></div>
+          <figure id="attentionPanel" hidden>
+            <div class="figure-heading">
+              <strong id="attentionHeading">Model attention</strong>
+              <button id="attentionToggle" class="text-button" type="button" aria-pressed="true">Show original</button>
+            </div>
+            <img id="attentionImage" alt="">
+            <figcaption>Shading indicates regions that contributed to the predicted class. The highlight does not establish a finding or a boundary.</figcaption>
+          </figure>
+          <div class="result-meta"><span id="scanDescription"></span><span id="latency"></span></div>
+          <p id="resultNote" class="result-note" hidden></p>
+        </div>
+        <div class="error" id="errorBox" role="alert" hidden>
+          <strong>Unable to analyze this image</strong>
+          <p id="errorMessage"></p>
+          <button class="text-button" id="dismissError" type="button">Choose another image</button>
+        </div>
+      </div>
+    </section>
+    <footer><span>KidneyScan research workspace</span><a href="/health">Service health ↗</a></footer>
+  </main>
+</body>
+</html>

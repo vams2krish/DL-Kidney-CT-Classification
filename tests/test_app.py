@@ -72,6 +72,7 @@ def test_four_class_route_preserves_default_binary_response():
     assert response.status_code == 200
     assert response.json[0]['image'] == 'Stone'
     assert set(response.json[0]['scores']) == {'Normal', 'Tumor', 'Stone', 'Cyst'}
+    assert client.post('/predict', json={**body, 'mode': 'auto'}).json[0]['image'] == 'Stone'
     assert client.post('/predict', json={**body, 'mode': 'unknown'}).status_code == 400
 
 
@@ -81,6 +82,36 @@ def test_missing_four_class_checkpoint_reports_unavailable(monkeypatch, tmp_path
     response = client.post('/predict', json={**payload(image_bytes()), 'mode': 'four_class'})
     assert response.status_code == 503
     assert b'four-class model checkpoint is unavailable' in response.data
+    assert client.post('/predict', json={
+        **payload(image_bytes()), 'mode': 'auto',
+    }).json[0]['image'] == 'Normal'
+
+
+def test_four_class_attention_tracks_the_predicted_class_and_image_size():
+    import tensorflow as tf
+
+    layers = tf.keras.layers
+    model = tf.keras.Sequential([
+        layers.Input((64, 64, 1), dtype='uint8'),
+        layers.Rescaling(1 / 255),
+        layers.Conv2D(1, 1, kernel_initializer='ones', use_bias=False),
+        layers.GlobalAveragePooling2D(),
+        layers.Dense(4, activation='softmax', use_bias=False),
+    ])
+    model.layers[-1].set_weights([np.array([[0, 0, 2, 0]], dtype=np.float32)])
+    classifier = FourClassPipeline()
+    classifier.model = model
+    client = create_app(FakeEngine(), four_classifier=classifier).test_client()
+    response = client.post('/predict', json={
+        **payload(image_bytes(mode='L')), 'mode': 'auto', 'explain': True,
+    })
+    assert response.status_code == 200
+    output = response.json[0]
+    assert output['image'] == output['attention_class'] == 'Stone'
+    overlay = base64.b64decode(output['attention_image'])
+    with Image.open(BytesIO(overlay)) as image:
+        assert image.size == (32, 48)
+        assert image.getpixel((16, 24))[:3] != (255, 255, 255)
 
 
 @pytest.mark.parametrize('body', [None, [], {}, {'image': 42}, {'image': ''}, {'image': '!!!'}, {'image': 'data:image/png,no'}])

@@ -3,9 +3,9 @@
 1. Install Python 3.11, create a virtual environment, and install `requirements-demo.txt`.
 2. From the repository root run `python serve.py`.
 3. Open http://127.0.0.1:8080. Confirm the API-online indicator appears.
-4. Choose **Binary classifier** or **Four-class classifier**. The four-class option appears enabled when its trained checkpoint is present at startup.
+4. Check the active model under the page title. The app selects the four-class CNN if its checkpoint is present at startup and VGG16 otherwise.
 5. Click **Try a synthetic sample**. Inspect its label and preview.
-6. Click **Run classification**. The first run loads the bundled model. The result shows its real output and raw, uncalibrated softmax scores.
+6. Click **Run analysis**. The first run loads the active model. Review the predicted category, image details, and raw scores. Use **Show original** to compare the image with its attention overlay when available.
 7. Click **Remove** and upload a JPEG or PNG. Files are handled in memory. The model cannot determine whether the image is medically appropriate.
 8. To check readiness directly, visit http://127.0.0.1:8080/ready. A 503 indicates the model could not load.
 

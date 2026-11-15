@@ -1,24 +1,19 @@
 'use strict';
 const $ = id => document.getElementById(id);
 let selected = null, synthetic = false, busy = false, previewUrl = null;
-const modelMode = () => document.querySelector('input[name="modelMode"]:checked').value;
-
-function updateModelSelection() {
-  const fourClass = modelMode() === 'four_class';
-  $('activeModel').textContent = fourClass ? 'Four-class CNN' : 'VGG16';
-  $('modelSpecs').textContent = fourClass
-    ? 'Four classes · 64 × 64 grayscale'
-    : 'Binary classification · 224 × 224 RGB';
-  $('resultCard').hidden = true;
-  $('errorBox').hidden = true;
-  $('resultPlaceholder').hidden = false;
-}
-$('modelPicker').addEventListener('change', updateModelSelection);
+let attentionUrl = '';
+const classDetails = {
+  Normal: 'The model assigned the highest score to the Normal category. This label cannot rule out an abnormality.',
+  Tumor: 'The model assigned the highest score to its Tumor category. The model does not determine tumor type or size.',
+  Stone: 'The model assigned the highest score to its Stone category. The model does not measure stone size or location.',
+  Cyst: 'The model assigned the highest score to its Cyst category. The model does not characterize the cyst or its severity.',
+};
 
 function renderScores(scores) {
-  const rows = Object.entries(scores).map(([label, score]) => {
+  const rows = Object.entries(scores).sort((a, b) => b[1] - a[1]).map(([label, score]) => {
     const row = document.createElement('div');
     row.className = 'score-row';
+    row.dataset.class = label.toLowerCase();
     const name = document.createElement('span');
     name.textContent = label;
     const bar = document.createElement('progress');
@@ -65,7 +60,7 @@ function selectFile(file, isSynthetic = false) {
   previewUrl = URL.createObjectURL(file);
   $('previewImage').src = previewUrl;
   $('fileName').textContent = file.name;
-  $('imageTag').textContent = synthetic ? 'SYNTHETIC · NOT A PATIENT SCAN' : 'YOUR IMAGE';
+  $('imageTag').hidden = !synthetic;
   $('previewContainer').hidden = false; $('uploadArea').hidden = true;
   $('predictBtn').disabled = false; $('errorBox').hidden = true;
   $('resultCard').hidden = true; $('resultPlaceholder').hidden = false;
@@ -107,7 +102,6 @@ $('predictBtn').addEventListener('click', async () => {
   if(!selected || busy) return;
   busy = true; $('predictBtn').disabled = true; $('removeBtn').disabled = true; $('sampleBtn').disabled = true;
   $('replaceBtn').disabled = true;
-  $('modelPicker').disabled = true;
   $('resultsPanel').setAttribute('aria-busy', 'true');
   $('predictLabel').textContent = 'Classifying…';
   $('fileInput').disabled = true; $('resultPlaceholder').hidden = true;
@@ -119,24 +113,24 @@ $('predictBtn').addEventListener('click', async () => {
       reader.onerror = () => reject(new Error('Could not read the file.')); reader.readAsDataURL(selected);
     });
     const response = await fetch('/predict', {method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({image:encoded, mode:modelMode(), explain:true}), signal:AbortSignal.timeout(120000)});
+      body:JSON.stringify({image:encoded, mode:'auto', explain:true}), signal:AbortSignal.timeout(120000)});
     const result = await response.json();
     if(!response.ok) throw new Error(result.error || 'Classification failed.');
     const output = result[0];
     if(!output || !output.scores) throw new Error('Unexpected server response.');
     $('resultTitle').textContent = output.image;
+    $('resultCard').dataset.class = output.image.toLowerCase();
+    $('resultDescription').textContent = classDetails[output.image] || '';
     $('scanDescription').textContent = output.description || '';
-    $('attentionPanel').hidden = !output.attention_image;
-    if (output.attention_image) {
-      $('attentionImage').src = 'data:image/png;base64,' + output.attention_image;
-    } else {
-      $('attentionImage').removeAttribute('src');
-    }
+    attentionUrl = output.attention_image ? 'data:image/png;base64,' + output.attention_image : '';
+    $('attentionPanel').hidden = !attentionUrl;
+    $('attentionHeading').textContent = (output.attention_class || output.image) + ' attention';
+    if (attentionUrl) showAttention(true);
+    else $('attentionImage').removeAttribute('src');
     renderScores(output.scores);
     $('resultModel').textContent = output.model;
-    $('resultNote').textContent = synthetic
-      ? 'Synthetic test image — this output demonstrates the software flow only. It has no medical interpretation.'
-      : output.notice;
+    $('resultNote').hidden = !synthetic;
+    $('resultNote').textContent = 'This result uses a synthetic sample for demonstration.';
     $('latency').textContent = ((performance.now()-started)/1000).toFixed(2)+' s · completed';
     $('resultCard').hidden = false;
     $('resultsPanel').setAttribute('aria-busy', 'false');
@@ -144,13 +138,26 @@ $('predictBtn').addEventListener('click', async () => {
   } catch(error) {showError(error.name === 'TimeoutError' ? 'The model timed out. Try again or check service readiness.' : error.message);}
   finally {
     busy = false; $('loading').hidden = true; $('predictBtn').disabled = !selected;
-    $('predictLabel').textContent = 'Run classification';
+    $('predictLabel').textContent = 'Run analysis';
     $('replaceBtn').disabled = false;
-    $('modelPicker').disabled = false;
     $('resultsPanel').setAttribute('aria-busy', 'false');
     $('removeBtn').disabled = false; $('sampleBtn').disabled = false; $('fileInput').disabled = false;
   }
 });
-fetch('/health').then(response => {if(!response.ok) throw new Error(); return response.json();})
-  .then(() => {$('serviceStatus').textContent = 'API online · model loads on demand';})
-  .catch(() => {$('serviceStatus').textContent = 'API unavailable';});
+function showAttention(enabled) {
+  $('attentionImage').src = enabled ? attentionUrl : previewUrl;
+  $('attentionImage').alt = enabled ? 'Uploaded image with model attention shading' : 'Original uploaded image';
+  $('attentionToggle').setAttribute('aria-pressed', String(enabled));
+  $('attentionToggle').textContent = enabled ? 'Show original' : 'Show highlight';
+}
+$('attentionToggle').addEventListener('click', () => {
+  showAttention($('attentionToggle').getAttribute('aria-pressed') !== 'true');
+});
+
+fetch('/health').then(response => {
+  if (!response.ok) throw new Error();
+  $('serviceStatus').textContent = 'Service online';
+}).catch(() => {
+  $('serviceStatus').textContent = 'Service unavailable';
+  $('serviceStatus').dataset.state = 'offline';
+});

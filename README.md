@@ -12,6 +12,15 @@ The repository name follows **project type + project name**: `DL-Kidney-CT-Class
 
 ## Project showcases
 
+### Unified CT research workspace
+
+The blue and slate workspace runs one analysis per upload. It uses the four-class CNN when its checkpoint is present and uses binary VGG16 on installations with only the bundled checkpoint. The result shows ranked class scores, image format and dimensions, a short explanation of the label, and an original/highlight toggle when positive model attention is available.
+
+![Unified workspace with class scores and attention toggle](docs/showcase/09-unified-attention-workspace.jpg)
+
+The published renal carcinoma example in this screenshot was classified **Normal** by the four-class CNN. Binary VGG16 labeled the same image **Tumor**. The four-class highlight shows evidence the CNN used for its Normal label. It provides no verified lesion location or boundary. [CT image source, NIH Clinical Center via Wikimedia Commons](https://commons.wikimedia.org/wiki/File:CT_VHL_renal.jpg).
+
+
 ### Retrained model on a published kidney CT
 
 The updated workspace uses a **Research use only** notice, clearer upload and recovery controls, and a larger attention overlay. It previews a real CT JPEG and displays the predicted class, raw scores, and a short description of the input. For Tumor predictions with positive class evidence, the orange overlay highlights model attention. Verified tumor location and boundaries require expert annotations.
@@ -98,11 +107,9 @@ scores = model(np.asarray(prepared)[None, ..., None], training=False).numpy()[0]
 print(labels[scores.argmax()], dict(zip(labels, scores.tolist())))
 ```
 
-The web workspace offers **Binary classifier** and **Four-class classifier** modes. It detects `artifacts/four-class-ct-cnn.keras` on startup, or uses the path set in `KIDNEY_FOUR_CLASS_MODEL_PATH`. The four-class option is disabled when the checkpoint is missing. `KIDNEY_MODEL_PATH` selects the binary VGG16 checkpoint. The attention overlay is available in binary mode when the model returns positive Tumor-class attention evidence. [CT Kidney dataset source](https://www.kaggle.com/datasets/nazmul0087/ct-kidney-dataset-normal-cyst-tumor-and-stone).
+The web app detects `artifacts/four-class-ct-cnn.keras` at startup. Set `KIDNEY_FOUR_CLASS_MODEL_PATH` to use a different compatible checkpoint. `KIDNEY_MODEL_PATH` selects the binary VGG16 checkpoint. Four-class attention uses Grad-CAM on the winning class and maps the heatmap back to the image after removing model-input padding. Normal is teal, Tumor rose, Stone amber, and Cyst violet. Binary VGG16 provides attention for Tumor predictions when positive evidence is present. [CT Kidney dataset source](https://www.kaggle.com/datasets/nazmul0087/ct-kidney-dataset-normal-cyst-tumor-and-stone).
 
-![Model picker and four-class scores in the updated research workspace](docs/showcase/08-four-class-workspace.jpg)
-
-API clients can request four outputs with `"mode": "four_class"` in the prediction body. Requests without a mode retain the binary response.
+The UI sends `"mode": "auto"` to `POST /predict`. API clients may explicitly set `"mode": "binary"` or `"mode": "four_class"`. Requests that omit the mode retain the binary response. Set `"explain": true` to request image details and, when available, `attention_class` and a base64 PNG in `attention_image`.
 
 ### Original demo walkthrough
 
@@ -159,7 +166,7 @@ pip install -r requirements-demo.txt
 python serve.py
 ```
 
-Open **http://127.0.0.1:8080**, choose **Try a synthetic sample**, and click **Run classification**. No dataset download, tracking account, cloud API key, or retraining is needed for this walkthrough. The first prediction loads the bundled model; subsequent predictions reuse it.
+Open **http://127.0.0.1:8080**, choose **Try a synthetic sample**, and click **Run analysis**. No dataset download, tracking account, cloud API key, or retraining is needed for this walkthrough. The first prediction loads the bundled model; subsequent predictions reuse it.
 
 The default server binds to loopback. `HOST` and `PORT` can configure the listening address for a controlled deployment. A public deployment additionally needs TLS, authentication or access controls, rate limiting, monitoring, and an appropriate data policy. This repository does not provision a public inference service.
 

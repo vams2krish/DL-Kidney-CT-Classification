@@ -67,9 +67,10 @@ def create_app(classifier=None, four_classifier=None):
         if not isinstance(payload, dict) or not isinstance(payload.get('image'), str) or not payload['image']:
             return jsonify(error='Provide a non-empty base64 image string.'), 400
         mode = payload.get('mode', 'binary')
-        if mode not in ('binary', 'four_class'):
+        if mode not in ('binary', 'four_class', 'auto'):
             return jsonify(error='Select a supported model.'), 400
-        selected_engine = four_classifier if mode == 'four_class' else engine
+        use_four = mode == 'four_class' or (mode == 'auto' and four_classifier is not None)
+        selected_engine = four_classifier if use_four else engine
         if selected_engine is None:
             return jsonify(error='The four-class model checkpoint is unavailable.'), 503
         encoded = payload['image']
@@ -86,7 +87,8 @@ def create_app(classifier=None, four_classifier=None):
         try:
             result = selected_engine.predict_bytes(data)
             if payload.get('explain') is True:
-                result[0].update(selected_engine.explain_bytes(data, int(result[0]['image'] == 'Tumor')))
+                labels = FourClassPipeline.labels if use_four else PredictionPipeline.labels
+                result[0].update(selected_engine.explain_bytes(data, labels.index(result[0]['image'])))
             return jsonify(result)
         except InvalidImage as exc:
             return jsonify(error=str(exc)), 400
