@@ -37,13 +37,7 @@ The local warning comes from an inherited `requests` dependency-version combinat
 
 ## Screenshots
 
-1. [Desktop workspace](showcase/01-desktop.jpg)
-2. [Image preview](showcase/02-image-preview.jpg)
-3. [Real inference result](showcase/03-live-result.jpg)
-4. [Mobile result](showcase/04-mobile.jpg)
-5. [Validation error](showcase/05-validation.jpg)
-
-The synthetic fixture is intentionally labeled. Its output is a software demonstration, not medical evidence. The screenshots were captured from the running local application rather than rendered mockups.
+The [current product gallery](../README.md#product-gallery) replaces the original demo screenshots with two attributable published CT examples. It shows the current four-class workspace. The metrics above describe the original verification run.
 
 ## Scope and remaining limits
 
